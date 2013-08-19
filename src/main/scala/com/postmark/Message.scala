@@ -13,7 +13,7 @@ import scala.Some
  * Date: 19/08/2013
  */
 case class Message(
-  From: Option[String],
+  From: String,
   To: Option[String],
   Cc: Option[String],
   Bcc: Option[String],
@@ -33,7 +33,6 @@ object Message extends DefaultJsonProtocol{
     Content: String
   )
 
-  //val MAX_RECIPIENTS = 20
   implicit val contentTypeFormat = new JsonFormat[MediaType]{
     def write(obj: MediaType) = JsString(obj.value)
     def read(json: JsValue) = json match {
@@ -144,22 +143,33 @@ object Message extends DefaultJsonProtocol{
     def clearHeaders = { Headers.clear(); this }
     def clearAttachments = { Attachments.clear(); this }
 
+    private def buildFrom =
+      if(From.isEmpty) throw new InvalidMessageException("Message needs From field!")
+      else From.mkString(",")
+
+    private def buildTo =
+      if(To.isEmpty && Cc.isEmpty && Bcc.isEmpty)
+        throw new InvalidMessageException("You need at least one recipient!")
+      else if(To.size + From.size + Bcc.size > Builder.MAX_RECIPIENTS)
+        throw new InvalidMessageException("Postmark accepts maximum %d recipients!".format(Builder.MAX_RECIPIENTS))
+      else if(To.isEmpty) None else Some(To.mkString(","))
+
+    private def buildBody =
+      if(HtmlBody.isEmpty && HtmlBody.isEmpty)
+        throw new InvalidMessageException("Provide either email TextBody or HtmlBody or both.")
+      else HtmlBody
+
     def build = new Message(
-      if(From.isEmpty) None else Some(From.mkString(",")),
-      if(To.isEmpty) None else Some(To.mkString(",")),
-      if(Cc.isEmpty) None else Some(Cc.mkString(",")),
-      if(Bcc.isEmpty) None else Some(Bcc.mkString(",")),
-      Subject,
+      buildFrom, buildTo, if(Cc.isEmpty) None else Some(Cc.mkString(",")),
+      if(Bcc.isEmpty) None else Some(Bcc.mkString(",")), Subject,
       if(Tag.isEmpty) None else Some(Tag.mkString(",")),
-      HtmlBody,
-      TextBody,
-      ReplyTo,
-      Headers.toList,
+      buildBody, TextBody, ReplyTo, Headers.toList,
       if(Attachments.isEmpty) None else Some(Attachments.toList)
     )
   }
 
   object Builder{
+    val MAX_RECIPIENTS = 20
     def apply() =  new Builder()
     implicit def builderToMessage(builder:Builder) = builder.build
   }
