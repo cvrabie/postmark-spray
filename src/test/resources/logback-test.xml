@@ -9,7 +9,9 @@
 
     <logger name="akka" level="INFO" />
     <logger name="akka://postmark/user/IO-HTTP/group-0/0" level="INFO" />
+    <logger name="akka://postmark/user/IO-HTTP/group-0/1" level="INFO" />
     <logger name="akka://postmark/user/IO-HTTP/host-connector-0/0" level="INFO" />
+    <logger name="akka://postmark/user/IO-HTTP/host-connector-0/1" level="INFO" />
     <logger name="spray" level="INFO" />
 
     <logger name="com.postmark" level="DEBUG" />

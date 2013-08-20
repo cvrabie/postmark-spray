@@ -36,16 +36,30 @@ object PostmarkFixture{
   implicit val system = ActorSystem("postmark")
   val client = new Postmark()
   val msg = Message.Builder().from("cristian.vrabie@gmail.com").to("cristian@vrabie.info").textBody("Hello").build
+  val bad = msg.copy(TextBody = None)
+
+  val WAIT = 5000 milli
 }
 
 class PostmarkSpec extends Specification{
   import PostmarkFixture._
 
   "\nPostmark" should {
+
     "send a call to Postmark" in {
-      val future = client.send(msg)
-      Await.result(future, 10000 milli)
-      success
+      Await.result(client.send(msg),WAIT) must beLike{
+        case Message.Receipt(to,_,id,err,msg) =>
+          msg must_== "Test job accepted"
+          to must_== "cristian@vrabie.info"
+          err must_== 0
+      }
     }
+
+    "translate InvalidMessageExceptions" in {
+      Await.result(client.send(bad).failed,WAIT) must beLike{
+        case InvalidMessageException(msg,_) => msg must not(beEmpty)
+      }
+    }
+
   }
 }

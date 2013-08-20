@@ -28,8 +28,12 @@ import akka.event.Logging
 import spray.client.pipelining._
 import scala.concurrent.Future
 import spray.http._
-import spray.json.{JsonFormat, DefaultJsonProtocol}
-import spray.httpx.SprayJsonSupport
+import spray.json._
+import spray.httpx.{UnsuccessfulResponseException, PipelineException, SprayJsonSupport}
+import spray.httpx.unmarshalling._
+import spray.http.HttpRequest
+import spray.http.HttpResponse
+import StatusCodes._
 
 class Postmark(implicit val system:ActorSystem){
   import system.dispatcher // execution context for futures below
@@ -43,17 +47,45 @@ class Postmark(implicit val system:ActorSystem){
     case _ => Future.successful(response)
   }
 
-  val pipeline: HttpRequest => Future[String] = (
+  val pipeline: HttpRequest => Future[HttpResponse] = (
     addHeader("X-Postmark-Server-Token",PostmarkConfig.default.token) ~>
     addHeader(HttpHeaders.Accept(MediaTypes.`application/json`)) ~>
     logRequest(log) ~>
     sendReceive ~>
-    logResponse(log) ~>
-    //exceptionHandler ~>
-    unmarshal[String]
+    logResponse(log)
   )
 
-  def send(message:Message):Future[String] = pipeline(
+  protected def extractRejection(response:HttpResponse):Either[Throwable,Message.Rejection] =
+      try{ Right( unmarshal[Message.Rejection].apply(response) ) }
+      catch{ case e:Throwable => Left(e) }
+
+  protected def receipt(response:HttpResponse):Future[Message.Receipt] =
+    //if case the response is 200 OK try to deserialize a Message.Receipt out of it
+    response.entity.as[Message.Receipt] match {
+      //if deserialization is ok return the receipt as a successful future
+      case Right(message) => Future.successful(message)
+      //if we can't deserialize a receipt transform, the response to a failure
+      case Left(error) => Future.failed(
+        new InvalidMessageException(
+          "Got 200 but response is not a Message.Receipt",
+          Some(new DeserializationException(error.toString))
+        )
+      )
+    }
+
+  protected def translateExceptions(response:HttpResponse):Throwable =
+    (response.status, extractRejection(response)) match {
+        case (UnprocessableEntity, Right(rejection)) => new InvalidMessageException(rejection.Message)
+        case (UnprocessableEntity, _) => new InvalidMessageException(("%d: Entity seems to be invalid but " +
+          "we were not offered a cause! %s").format(UnprocessableEntity.intValue,response.toString))
+        case _ => new Exception("Some kind of error occured")
+    }
+
+
+  def send(message:Message):Future[Message.Receipt] = pipeline(
     Post(PostmarkConfig.default.url, message)
-  )
+  ).flatMap{
+    case response if response.status == StatusCodes.OK => receipt(response)
+    case response => Future.failed(translateExceptions(response))
+  }
 }

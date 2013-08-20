@@ -30,6 +30,8 @@ import com.postmark.Message.Attachment
 import java.io._
 import org.parboiled.common.Base64
 import scala.Some
+import java.util.Calendar
+import java.text.SimpleDateFormat
 
 /**
  * User: cvrabie
@@ -94,7 +96,7 @@ object Message extends DefaultJsonProtocol{
       val delegate = obj.toJson(defaultMessageJsonFormat)
       val fields = delegate.asJsObject.fields
       fields.get("Headers") match {
-          //if the headers is an empty array don't serialize it
+        //if the headers is an empty array don't serialize it
         case Some(JsArray(headers)) if headers.isEmpty => JsObject(fields - "Headers")
         case _ => delegate
       }
@@ -103,6 +105,9 @@ object Message extends DefaultJsonProtocol{
     def read(json: JsValue) = json.convertTo[Message](defaultMessageJsonFormat)
   }
 
+  implicit val receiptJsonFormat = jsonFormat5(Receipt.apply)
+
+  implicit val rejectionJsonFormat = jsonFormat2(Rejection.apply)
 
   object Attachment{
     protected val extensionRegex = "\\.([a-zA-Z0-9-_]*)$".r
@@ -210,4 +215,17 @@ object Message extends DefaultJsonProtocol{
     def apply() =  new Builder()
     implicit def builderToMessage(builder:Builder) = builder.build
   }
+
+  case class Receipt(
+    val To:String,
+    val SubmittedAt:String,
+    val MessageID:String,
+    val ErrorCode:Int,
+    val Message:String
+  )
+
+  case class Rejection(
+    val ErrorCode: Int,
+    val Message: String
+  )
 }
