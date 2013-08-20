@@ -23,25 +23,29 @@
 
 package com.postmark
 
+import org.specs2.mutable.Specification
+import akka.actor.ActorSystem
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
 /**
  * User: cvrabie
- * Date: 19/08/2013
+ * Date: 20/08/2013
  */
-abstract class PostmarkException(val msg:String, val cause:Option[Throwable] = None)
-extends Exception(msg, cause.getOrElse(null))
-
-object PostmarkException{
-  def unapply(e:PostmarkException) = Some((e.msg, e.cause))
+object PostmarkFixture{
+  implicit val system = ActorSystem("postmark")
+  val client = new Postmark()
+  val msg = Message.Builder().from("cristian.vrabie@gmail.com").to("cristian@vrabie.info").textBody("Hello").build
 }
 
-case class InvalidMessageException(override val msg:String, override val cause:Option[Throwable] = None)
-extends PostmarkException(msg, cause)
+class PostmarkSpec extends Specification{
+  import PostmarkFixture._
 
-case class ApiTokenException(override val msg:String)
-extends PostmarkException(msg, None)
-
-case class ErrorResponse(val errorCode:Int, val message:String)
-object ErrorResponse{
-  import spray.json.DefaultJsonProtocol._
-  implicit val errorResponseJsonFormat = jsonFormat2(ErrorResponse.apply)
+  "\nPostmark" should {
+    "send a call to Postmark" in {
+      val future = client.send(msg)
+      Await.result(future, 10000 milli)
+      success
+    }
+  }
 }

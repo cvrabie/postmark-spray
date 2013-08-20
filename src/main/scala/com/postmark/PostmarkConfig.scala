@@ -23,25 +23,20 @@
 
 package com.postmark
 
+import com.typesafe.config.ConfigFactory
+
 /**
  * User: cvrabie
- * Date: 19/08/2013
+ * Date: 20/08/2013
  */
-abstract class PostmarkException(val msg:String, val cause:Option[Throwable] = None)
-extends Exception(msg, cause.getOrElse(null))
+class PostmarkConfig(val url:String, val token:String)
 
-object PostmarkException{
-  def unapply(e:PostmarkException) = Some((e.msg, e.cause))
-}
-
-case class InvalidMessageException(override val msg:String, override val cause:Option[Throwable] = None)
-extends PostmarkException(msg, cause)
-
-case class ApiTokenException(override val msg:String)
-extends PostmarkException(msg, None)
-
-case class ErrorResponse(val errorCode:Int, val message:String)
-object ErrorResponse{
-  import spray.json.DefaultJsonProtocol._
-  implicit val errorResponseJsonFormat = jsonFormat2(ErrorResponse.apply)
+object PostmarkConfig{
+  val default = {
+    val config = ConfigFactory.load()
+    new PostmarkConfig(
+      config.getString("postmark.url"),
+      config.getString("postmark.token")
+    )
+  }
 }

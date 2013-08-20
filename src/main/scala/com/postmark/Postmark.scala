@@ -23,25 +23,37 @@
 
 package com.postmark
 
-/**
- * User: cvrabie
- * Date: 19/08/2013
- */
-abstract class PostmarkException(val msg:String, val cause:Option[Throwable] = None)
-extends Exception(msg, cause.getOrElse(null))
+import akka.actor.ActorSystem
+import akka.event.Logging
+import spray.client.pipelining._
+import scala.concurrent.Future
+import spray.http._
+import spray.json.{JsonFormat, DefaultJsonProtocol}
+import spray.httpx.SprayJsonSupport
 
-object PostmarkException{
-  def unapply(e:PostmarkException) = Some((e.msg, e.cause))
-}
+class Postmark(implicit val system:ActorSystem){
+  import system.dispatcher // execution context for futures below
+  import SprayJsonSupport._
 
-case class InvalidMessageException(override val msg:String, override val cause:Option[Throwable] = None)
-extends PostmarkException(msg, cause)
+  val log = Logging(system, getClass)
 
-case class ApiTokenException(override val msg:String)
-extends PostmarkException(msg, None)
+  val exceptionHandler:HttpResponse => Future[HttpResponse] = response => response.status match {
+    case StatusCodes.OK => Future.successful(response)
+    case StatusCodes.Unauthorized => Future.failed(ApiTokenException("unauthorized dude!"))
+    case _ => Future.successful(response)
+  }
 
-case class ErrorResponse(val errorCode:Int, val message:String)
-object ErrorResponse{
-  import spray.json.DefaultJsonProtocol._
-  implicit val errorResponseJsonFormat = jsonFormat2(ErrorResponse.apply)
+  val pipeline: HttpRequest => Future[String] = (
+    addHeader("X-Postmark-Server-Token",PostmarkConfig.default.token) ~>
+    addHeader(HttpHeaders.Accept(MediaTypes.`application/json`)) ~>
+    logRequest(log) ~>
+    sendReceive ~>
+    logResponse(log) ~>
+    //exceptionHandler ~>
+    unmarshal[String]
+  )
+
+  def send(message:Message):Future[String] = pipeline(
+    Post(PostmarkConfig.default.url, message)
+  )
 }

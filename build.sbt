@@ -31,15 +31,29 @@ scalaVersion := "2.10.2"
 
 resolvers ++= Seq(
   "spray repo" at "http://repo.spray.io",
+  "spray nightly" at "http://nightlies.spray.io",
   "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 )
 
 libraryDependencies ++= Seq(
-  "io.spray" % "spray-client" % "1.2-M8",
+  "io.spray" % "spray-client" % "1.2-20130801",
   "com.typesafe.akka" %% "akka-actor" % "2.2.0",
   "io.spray"        %% "spray-json"     % "1.2.5",
+  "com.typesafe.akka"  %% "akka-slf4j"       % "2.2.0",
+  "ch.qos.logback"      % "logback-classic"  % "1.0.13",
   "org.mockito"         % "mockito-all"      % "1.9.0"        % "test",
-  "org.specs2"         %% "specs2"           % "2.1"          % "test"
+  "org.specs2"         %% "specs2"           % "2.1"          % "test",
+  "com.typesafe.akka"  %% "akka-testkit"     % "2.2.0"        % "test"
+)
+
+scalacOptions ++= Seq(
+  "-unchecked",
+  "-deprecation",
+  "-Xlint",
+  "-Ywarn-dead-code",
+  "-language:_",
+  "-target:jvm-1.6",
+  "-encoding", "UTF-8"
 )
 
 net.virtualvoid.sbt.graph.Plugin.graphSettings
