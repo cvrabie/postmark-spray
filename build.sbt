@@ -41,3 +41,5 @@ libraryDependencies ++= Seq(
   "org.mockito"         % "mockito-all"      % "1.9.0"        % "test",
   "org.specs2"         %% "specs2"           % "2.1"          % "test"
 )
+
+net.virtualvoid.sbt.graph.Plugin.graphSettings
