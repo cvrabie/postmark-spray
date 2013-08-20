@@ -87,7 +87,21 @@ object Message extends DefaultJsonProtocol{
 
   implicit val attachmentJsonFormat = jsonFormat3(Attachment.apply)
 
-  implicit val messageJsonFormat = jsonFormat11(Message.apply)
+  val defaultMessageJsonFormat = jsonFormat11(Message.apply)
+
+  implicit val messageJsonFormat = new RootJsonFormat[Message] {
+    def write(obj: Message) = {
+      val delegate = obj.toJson(defaultMessageJsonFormat)
+      val fields = delegate.asJsObject.fields
+      fields.get("Headers") match {
+          //if the headers is an empty array don't serialize it
+        case Some(JsArray(headers)) if headers.isEmpty => JsObject(fields - "Headers")
+        case _ => delegate
+      }
+
+    }
+    def read(json: JsValue) = json.convertTo[Message](defaultMessageJsonFormat)
+  }
 
 
   object Attachment{
@@ -178,7 +192,7 @@ object Message extends DefaultJsonProtocol{
       else if(To.isEmpty) None else Some(To.mkString(","))
 
     private def buildBody =
-      if(HtmlBody.isEmpty && HtmlBody.isEmpty)
+      if(TextBody.isEmpty && HtmlBody.isEmpty)
         throw new InvalidMessageException("Provide either email TextBody or HtmlBody or both.")
       else HtmlBody
 

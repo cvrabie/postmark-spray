@@ -46,6 +46,12 @@ class MessageSpec extends Specification with Mockito{
           |}""".stripMargin.replaceAll("\n","")
     }
 
+    "not serialize optional fields tat were not set" in{
+      import spray.json._
+      val msg = Message.Builder().from("cristian@example.com").to("a@example.com").textBody("abc").build
+      msg.toJson.compactPrint must_== """{"From":"cristian@example.com","To":"a@example.com","TextBody":"abc"}"""
+    }
+
   }
 
   "Message.Builder" should {
@@ -86,6 +92,13 @@ class MessageSpec extends Specification with Mockito{
     "fail if no body was set"in {
       Message.Builder().from("cristian@example.com").to("b@example.com")
         .build must throwA[InvalidMessageException]
+    }
+
+    "construct a message with minimum data" in {
+      Message.Builder().from("cristian@example.com").to("b@example.com").textBody("abc")
+        .build must beLike{
+        case m:Message => m.TextBody must beSome.which(_=="abc")
+      }
     }
   }
 }
