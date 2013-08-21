@@ -43,7 +43,9 @@ libraryDependencies ++= Seq(
   "ch.qos.logback"      % "logback-classic"  % "1.0.13",
   "org.mockito"         % "mockito-all"      % "1.9.0"        % "test",
   "org.specs2"         %% "specs2"           % "2.1"          % "test",
-  "com.typesafe.akka"  %% "akka-testkit"     % "2.2.0"        % "test"
+  "com.typesafe.akka"  %% "akka-testkit"     % "2.2.0"        % "test",
+  "junit"               % "junit"            % "4.7"          % "test",
+  "com.novocode"        % "junit-interface"  % "0.7"          % "test->default"
 )
 
 scalacOptions ++= Seq(
