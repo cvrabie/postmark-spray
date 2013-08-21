@@ -29,7 +29,7 @@ import spray.client.pipelining._
 import scala.concurrent.Future
 import spray.http._
 import spray.json._
-import spray.httpx.{UnsuccessfulResponseException, PipelineException, SprayJsonSupport}
+import spray.httpx.SprayJsonSupport
 import spray.httpx.unmarshalling._
 import spray.http.HttpRequest
 import spray.http.HttpResponse
@@ -38,6 +38,7 @@ import StatusCodes._
 class Postmark(implicit val system:ActorSystem){
   import system.dispatcher // execution context for futures below
   import SprayJsonSupport._
+  import Postmark._
 
   val log = Logging(system, getClass)
 
@@ -55,10 +56,6 @@ class Postmark(implicit val system:ActorSystem){
     logResponse(log)
   )
 
-  protected def extractRejection(response:HttpResponse):Either[Throwable,Message.Rejection] =
-      try{ Right( unmarshal[Message.Rejection].apply(response) ) }
-      catch{ case e:Throwable => Left(e) }
-
   protected def receipt(response:HttpResponse):Future[Message.Receipt] =
     //if case the response is 200 OK try to deserialize a Message.Receipt out of it
     response.entity.as[Message.Receipt] match {
@@ -66,19 +63,53 @@ class Postmark(implicit val system:ActorSystem){
       case Right(message) => Future.successful(message)
       //if we can't deserialize a receipt transform, the response to a failure
       case Left(error) => Future.failed(
-        new InvalidMessageException(
-          "Got 200 but response is not a Message.Receipt",
-          Some(new DeserializationException(error.toString))
-        )
-      )
+        new InvalidMessage(MSG_NO_RECEIPT, Some(new DeserializationException(error.toString))))
     }
 
   protected def translateExceptions(response:HttpResponse):Throwable =
-    (response.status, extractRejection(response)) match {
-        case (UnprocessableEntity, Right(rejection)) => new InvalidMessageException(rejection.Message)
-        case (UnprocessableEntity, _) => new InvalidMessageException(("%d: Entity seems to be invalid but " +
-          "we were not offered a cause! %s").format(UnprocessableEntity.intValue,response.toString))
-        case _ => new Exception("Some kind of error occured")
+    (response.status, response.entity.as[Message.Rejection]) match {
+
+      case (UnprocessableEntity, Right(Message.Rejection(0,msg))) =>
+        new ApiTokenException(msg)
+
+      case (UnprocessableEntity, Right(Message.Rejection(300,msg))) =>
+        new InvalidEmailRequest(msg)
+
+      case (UnprocessableEntity, Right(Message.Rejection(code,msg))) if code==400 || code==401 =>
+        new SenderSignatureNotFound(msg)
+
+      case (UnprocessableEntity, Right(Message.Rejection(code,msg))) if code==402 || code==403 || code==409 =>
+        new InvalidJson(msg)
+
+      case (UnprocessableEntity, Right(Message.Rejection(405,msg)))=>
+        new NotAllowedToSend(msg)
+
+      case (UnprocessableEntity, Right(Message.Rejection(406,msg)))=>
+        new InactiveRecipient(msg)
+
+      case (UnprocessableEntity, Right(Message.Rejection(code,msg))) if code==407 || code==408 =>
+        new BounceException(msg)
+
+      case (UnprocessableEntity, Right(Message.Rejection(410,msg)))=>
+        new TooManyBatchMessages(msg)
+
+      case (UnprocessableEntity, Right(Message.Rejection(code,msg)))=>
+        new InvalidMessage("%d: %s".format(code,msg))
+
+      case (UnprocessableEntity, _) => new InvalidMessage(
+        MSG_UNPROCESSABLE.format(UnprocessableEntity.intValue,response.toString))
+
+      case (Unauthorized, Right(rejection)) =>
+        new ApiTokenException(rejection.Message)
+
+      case (Unauthorized, _) => new ApiTokenException(
+        MSG_UNAUTHORIZED.format(Unauthorized.intValue))
+
+      case (InternalServerError, _) =>
+        new RuntimeException("500 Internal Postmark Error!")
+
+      case _ =>
+        new RuntimeException("Unknown error has occurred! Response: %s".format(response))
     }
 
 
@@ -88,4 +119,10 @@ class Postmark(implicit val system:ActorSystem){
     case response if response.status == StatusCodes.OK => receipt(response)
     case response => Future.failed(translateExceptions(response))
   }
+}
+
+object Postmark{
+  val MSG_NO_RECEIPT = "Got 200 but response is not a Message.Receipt"
+  val MSG_UNPROCESSABLE = "%d: Entity seems to be invalid but we were not offered a cause! %s"
+  val MSG_UNAUTHORIZED = "%d: You are not authorized to do that! Set your API Key in application.conf"
 }

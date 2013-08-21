@@ -27,6 +27,7 @@ import org.specs2.mutable.Specification
 import akka.actor.ActorSystem
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import akka.event.Logging
 
 /**
  * User: cvrabie
@@ -37,7 +38,7 @@ object PostmarkFixture{
   val client = new Postmark()
   val msg = Message.Builder().from("cristian.vrabie@gmail.com").to("cristian@vrabie.info").textBody("Hello").build
   val bad = msg.copy(TextBody = None)
-
+  val log = Logging(system, getClass)
   val WAIT = 5000 milli
 }
 
@@ -57,7 +58,9 @@ class PostmarkSpec extends Specification{
 
     "translate InvalidMessageExceptions" in {
       Await.result(client.send(bad).failed,WAIT) must beLike{
-        case InvalidMessageException(msg,_) => msg must not(beEmpty)
+        case InvalidMessage(msg,_) =>
+          log.debug("Got InvalidMessageException(%s)".format(msg))
+          msg must not(beEmpty)
       }
     }
 

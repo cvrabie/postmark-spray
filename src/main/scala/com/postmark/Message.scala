@@ -186,19 +186,19 @@ object Message extends DefaultJsonProtocol{
     def clearAttachments = { Attachments.clear(); this }
 
     private def buildFrom =
-      if(From.isEmpty) throw new InvalidMessageException("Message needs From field!")
+      if(From.isEmpty) throw new InvalidMessage("Message needs From field!")
       else From.mkString(",")
 
     private def buildTo =
       if(To.isEmpty && Cc.isEmpty && Bcc.isEmpty)
-        throw new InvalidMessageException("You need at least one recipient!")
+        throw new InvalidMessage("You need at least one recipient!")
       else if(To.size + From.size + Bcc.size > Builder.MAX_RECIPIENTS)
-        throw new InvalidMessageException("Postmark accepts maximum %d recipients!".format(Builder.MAX_RECIPIENTS))
+        throw new InvalidMessage("Postmark accepts maximum %d recipients!".format(Builder.MAX_RECIPIENTS))
       else if(To.isEmpty) None else Some(To.mkString(","))
 
     private def buildBody =
       if(TextBody.isEmpty && HtmlBody.isEmpty)
-        throw new InvalidMessageException("Provide either email TextBody or HtmlBody or both.")
+        throw new InvalidMessage("Provide either email TextBody or HtmlBody or both.")
       else HtmlBody
 
     def build = new Message(

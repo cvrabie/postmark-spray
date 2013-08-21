@@ -75,23 +75,23 @@ class MessageSpec extends Specification with Mockito{
 
     "fail if the From field was not set" in {
       Message.Builder().to("b@example.com").htmlBody("<h1>Hello</h1>")
-      .build must throwA[InvalidMessageException]
+      .build must throwA[InvalidMessage]
     }
 
     "fail if no recipient was set" in {
       Message.Builder().from("cristian@example.com").htmlBody("<h1>Hello</h1>")
-        .build must throwA[InvalidMessageException]
+        .build must throwA[InvalidMessage]
     }
 
     "fail if there are more than 20 recipients" in {
       val builder =  Message.Builder().from("cristian@example.com").htmlBody("<h1>Hello</h1>")
       val emails = (1 to 21).map(i=>"i"+i+"@example.com")
-      builder.to(emails:_*).build must throwA[InvalidMessageException]
+      builder.to(emails:_*).build must throwA[InvalidMessage]
     }
 
     "fail if no body was set"in {
       Message.Builder().from("cristian@example.com").to("b@example.com")
-        .build must throwA[InvalidMessageException]
+        .build must throwA[InvalidMessage]
     }
 
     "construct a message with minimum data" in {
