@@ -40,16 +40,10 @@ class Postmark(implicit val system:ActorSystem){
   import SprayJsonSupport._
   import Postmark._
 
-  val log = Logging(system, getClass)
+  protected val log = Logging(system, getClass)
 
-  val exceptionHandler:HttpResponse => Future[HttpResponse] = response => response.status match {
-    case StatusCodes.OK => Future.successful(response)
-    case StatusCodes.Unauthorized => Future.failed(ApiTokenException("unauthorized dude!"))
-    case _ => Future.successful(response)
-  }
-
-  val pipeline: HttpRequest => Future[HttpResponse] = (
-    addHeader("X-Postmark-Server-Token",PostmarkConfig.default.token) ~>
+  protected val pipeline: HttpRequest => Future[HttpResponse] = (
+    addHeader(HEADER_AUTH,PostmarkConfig.default.token) ~>
     addHeader(HttpHeaders.Accept(MediaTypes.`application/json`)) ~>
     logRequest(log) ~>
     sendReceive ~>
@@ -106,10 +100,10 @@ class Postmark(implicit val system:ActorSystem){
         MSG_UNAUTHORIZED.format(Unauthorized.intValue))
 
       case (InternalServerError, _) =>
-        new RuntimeException("500 Internal Postmark Error!")
+        new RuntimeException(MSG_INTERNAL)
 
       case _ =>
-        new RuntimeException("Unknown error has occurred! Response: %s".format(response))
+        new RuntimeException(MSG_UNKNOWN.format(response))
     }
 
 
@@ -122,7 +116,10 @@ class Postmark(implicit val system:ActorSystem){
 }
 
 object Postmark{
+  val HEADER_AUTH = "X-Postmark-Server-Token"
   val MSG_NO_RECEIPT = "Got 200 but response is not a Message.Receipt"
   val MSG_UNPROCESSABLE = "%d: Entity seems to be invalid but we were not offered a cause! %s"
   val MSG_UNAUTHORIZED = "%d: You are not authorized to do that! Set your API Key in application.conf"
+  val MSG_UNKNOWN = "Unknown error has occurred! Response: %s"
+  val MSG_INTERNAL = "500 Internal Postmark Error!"
 }

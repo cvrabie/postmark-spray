@@ -37,7 +37,11 @@ object PostmarkFixture{
   implicit val system = ActorSystem("postmark")
   val client = new Postmark()
   val msg = Message.Builder().from("cristian.vrabie@gmail.com").to("cristian@vrabie.info").textBody("Hello").build
-  val bad = msg.copy(TextBody = None)
+  val bad = msg.copy(To = Some(
+    "1@vrabie.info,2@vrabie.info,3@vrabie.info,4@vrabie.info,5@vrabie.info,6@vrabie.info,7@vrabie.info,8@vrabie.info" +
+      ",9@vrabie.info,10@vrabie.info,11@vrabie.info,12@vrabie.info,13@vrabie.info,14@vrabie.info,15@vrabie.info" +
+      ",16@vrabie.info,17@vrabie.info,18@vrabie.info,19@vrabie.info,20@vrabie.info,21@vrabie.info"
+  ))
   val log = Logging(system, getClass)
   val WAIT = 5000 milli
 }

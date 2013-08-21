@@ -49,7 +49,13 @@ case class Message(
   ReplyTo: Option[String],
   Headers: Seq[(String,String)],
   Attachments: Option[Seq[Attachment]]
-)
+){
+  if(To.isEmpty && Cc.isEmpty && Bcc.isEmpty)
+    throw new InvalidMessage("You need at least one recipient!")
+
+  if(TextBody.isEmpty && HtmlBody.isEmpty)
+    throw new InvalidMessage("Provide either email TextBody or HtmlBody or both.")
+}
 
 object Message extends DefaultJsonProtocol{
   case class Attachment(
@@ -190,22 +196,17 @@ object Message extends DefaultJsonProtocol{
       else From.mkString(",")
 
     private def buildTo =
-      if(To.isEmpty && Cc.isEmpty && Bcc.isEmpty)
-        throw new InvalidMessage("You need at least one recipient!")
-      else if(To.size + From.size + Bcc.size > Builder.MAX_RECIPIENTS)
-        throw new InvalidMessage("Postmark accepts maximum %d recipients!".format(Builder.MAX_RECIPIENTS))
+      if(To.size + From.size + Bcc.size > Message.Builder.MAX_RECIPIENTS)
+        throw new InvalidMessage("Postmark accepts maximum %d recipients!".format(Message.Builder.MAX_RECIPIENTS))
       else if(To.isEmpty) None else Some(To.mkString(","))
 
-    private def buildBody =
-      if(TextBody.isEmpty && HtmlBody.isEmpty)
-        throw new InvalidMessage("Provide either email TextBody or HtmlBody or both.")
-      else HtmlBody
-
     def build = new Message(
-      buildFrom, buildTo, if(Cc.isEmpty) None else Some(Cc.mkString(",")),
-      if(Bcc.isEmpty) None else Some(Bcc.mkString(",")), Subject,
+      buildFrom, buildTo,
+      if(Cc.isEmpty) None else Some(Cc.mkString(",")),
+      if(Bcc.isEmpty) None else Some(Bcc.mkString(",")),
+      Subject,
       if(Tag.isEmpty) None else Some(Tag.mkString(",")),
-      buildBody, TextBody, ReplyTo, Headers.toList,
+      HtmlBody, TextBody, ReplyTo, Headers.toList,
       if(Attachments.isEmpty) None else Some(Attachments.toList)
     )
   }
