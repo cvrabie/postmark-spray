@@ -115,6 +115,19 @@ object Message extends DefaultJsonProtocol{
 
   implicit val rejectionJsonFormat = jsonFormat2(Rejection.apply)
 
+  implicit val receiptAndRejectionArrayReader = new RootJsonFormat[Array[Either[Message.Rejection,Message.Receipt]]] {
+    def read(json: JsValue) = json match {
+      case JsArray(arr) => arr.toArray.map( _ match {
+        case elem@JsObject(obj) if obj.get("MessageID").isDefined => Right(elem.convertTo[Message.Receipt])
+        case elem@JsObject(obj) => Left(elem.convertTo[Message.Rejection])
+        case elem => throw new DeserializationException("Expecting either Message.Rejection or Message.Receipt but got"+elem)
+      })
+      case other => throw new DeserializationException("Expecting Array of Message.Rejection/Message.Receipt but got"+other)
+    }
+
+    def write(obj: Array[Either[Rejection, Receipt]]) = JsNull
+  }
+
   object Attachment{
     protected val extensionRegex = "\\.([a-zA-Z0-9-_]*)$".r
     protected def extension(file:File) = extensionRegex findFirstMatchIn file.getName map(_.group(1))

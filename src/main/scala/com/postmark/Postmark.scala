@@ -60,6 +60,14 @@ class Postmark(implicit val system:ActorSystem){
         new InvalidMessage(MSG_NO_RECEIPT, Some(new DeserializationException(error.toString))))
     }
 
+  protected def receipts(response:HttpResponse):Future[Array[Either[Message.Rejection,Message.Receipt]]] =
+    response.entity.as[Array[Either[Message.Rejection,Message.Receipt]]] match {
+      case Right(arr) => Future.successful(arr)
+      case Left(error) => Future.failed(
+        new InvalidMessage(MSG_NO_BATCH_RECEIPT, Some(new DeserializationException(error.toString)))
+      )
+    }
+
   protected def translateExceptions(response:HttpResponse):Throwable =
     (response.status, response.entity.as[Message.Rejection]) match {
 
@@ -108,9 +116,16 @@ class Postmark(implicit val system:ActorSystem){
 
 
   def send(message:Message):Future[Message.Receipt] = pipeline(
-    Post(PostmarkConfig.default.url, message)
+    Post(PostmarkConfig.default.sendUrl, message)
   ).flatMap{
     case response if response.status == StatusCodes.OK => receipt(response)
+    case response => Future.failed(translateExceptions(response))
+  }
+
+  def sendBatch(messages:Message*):Future[Array[Either[Message.Rejection,Message.Receipt]]] = pipeline(
+    Post(PostmarkConfig.default.batchUrl, messages)
+  ).flatMap{
+    case response if response.status == StatusCodes.OK => receipts(response)
     case response => Future.failed(translateExceptions(response))
   }
 }
@@ -118,6 +133,7 @@ class Postmark(implicit val system:ActorSystem){
 object Postmark{
   val HEADER_AUTH = "X-Postmark-Server-Token"
   val MSG_NO_RECEIPT = "Got 200 but response is not a Message.Receipt"
+  val MSG_NO_BATCH_RECEIPT = "Got 200 but response is not an Array of Either[Message.Rejection,Message.Receipt]"
   val MSG_UNPROCESSABLE = "%d: Entity seems to be invalid but we were not offered a cause! %s"
   val MSG_UNAUTHORIZED = "%d: You are not authorized to do that! Set your API Key in application.conf"
   val MSG_UNKNOWN = "Unknown error has occurred! Response: %s"

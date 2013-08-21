@@ -37,6 +37,7 @@ object PostmarkFixture{
   implicit val system = ActorSystem("postmark")
   val client = new Postmark()
   val msg = Message.Builder().from("1@example.com").to("2@example.com").textBody("Hello").build
+  val msg2 = msg.copy(TextBody = Some("bcd"))
   val bad = msg.copy(To = Some(
     "1@example.com,2@example.com,3@example.com,4@example.com,5@example.com,6@example.com,7@example.com,8@example.com" +
       ",9@example.com,10@example.com,11@example.com,12@example.com,13@example.com,14@example.com,15@example.com" +
@@ -51,7 +52,7 @@ class PostmarkSpec extends Specification{
 
   "\nPostmark" should {
 
-    "send a call to Postmark" in {
+    "send a message to Postmark" in {
       Await.result(client.send(msg),WAIT) must beLike{
         case Message.Receipt(to,_,id,err,msg) =>
           msg must_== "Test job accepted"
@@ -65,6 +66,15 @@ class PostmarkSpec extends Specification{
         case InvalidMessage(msg,_) =>
           log.debug("Got InvalidMessageException(%s)".format(msg))
           msg must not(beEmpty)
+      }
+    }
+
+    "send a batch to Postmark" in {
+      Await.result(client.sendBatch(msg,msg2,bad),WAIT) must beLike{
+        case Array(Right(receipt1),Right(receipt2),Left(rejection1)) =>
+          receipt1.Message must_== "Test job accepted"
+          receipt2.Message must_== "Test job accepted"
+          rejection1.ErrorCode must_== 300
       }
     }
 
