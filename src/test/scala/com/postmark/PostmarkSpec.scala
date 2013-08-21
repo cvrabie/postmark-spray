@@ -36,11 +36,11 @@ import akka.event.Logging
 object PostmarkFixture{
   implicit val system = ActorSystem("postmark")
   val client = new Postmark()
-  val msg = Message.Builder().from("cristian.vrabie@gmail.com").to("cristian@vrabie.info").textBody("Hello").build
+  val msg = Message.Builder().from("1@example.com").to("2@example.com").textBody("Hello").build
   val bad = msg.copy(To = Some(
-    "1@vrabie.info,2@vrabie.info,3@vrabie.info,4@vrabie.info,5@vrabie.info,6@vrabie.info,7@vrabie.info,8@vrabie.info" +
-      ",9@vrabie.info,10@vrabie.info,11@vrabie.info,12@vrabie.info,13@vrabie.info,14@vrabie.info,15@vrabie.info" +
-      ",16@vrabie.info,17@vrabie.info,18@vrabie.info,19@vrabie.info,20@vrabie.info,21@vrabie.info"
+    "1@example.com,2@example.com,3@example.com,4@example.com,5@example.com,6@example.com,7@example.com,8@example.com" +
+      ",9@example.com,10@example.com,11@example.com,12@example.com,13@example.com,14@example.com,15@example.com" +
+      ",16@example.com,17@example.com,18@example.com,19@example.com,20@example.com,21@example.com"
   ))
   val log = Logging(system, getClass)
   val WAIT = 5000 milli
@@ -55,7 +55,7 @@ class PostmarkSpec extends Specification{
       Await.result(client.send(msg),WAIT) must beLike{
         case Message.Receipt(to,_,id,err,msg) =>
           msg must_== "Test job accepted"
-          to must_== "cristian@vrabie.info"
+          to must_== "2@example.com"
           err must_== 0
       }
     }
