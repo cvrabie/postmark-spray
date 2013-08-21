@@ -23,7 +23,7 @@
 
 organization := "com.postmark"
 
-name := "postmark-client"
+name := "postmark-spray"
 
 version := "0.1-SNAPSHOT"
 
@@ -55,5 +55,7 @@ scalacOptions ++= Seq(
   "-target:jvm-1.6",
   "-encoding", "UTF-8"
 )
+
+testOptions in Test += Tests.Argument(TestFrameworks.Specs2, "junitxml", "console")
 
 net.virtualvoid.sbt.graph.Plugin.graphSettings
