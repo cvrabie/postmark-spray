@@ -242,4 +242,6 @@ object Message extends DefaultJsonProtocol{
     val ErrorCode: Int,
     val Message: String
   )
+
+  case class Batch(val msgs:Seq[Message])
 }
