@@ -18,7 +18,7 @@
 
     <logger name="com.postmark" level="DEBUG" />
 
-    <root level="debug">
+    <root level="DEBUG">
         <appender-ref ref="STDOUT" />
     </root>
 </configuration>

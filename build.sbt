@@ -25,7 +25,7 @@ organization := "com.postmark"
 
 name := "postmark-spray"
 
-version := "0.1-SNAPSHOT"
+version := "0.2-SNAPSHOT"
 
 scalaVersion := "2.10.2"
 

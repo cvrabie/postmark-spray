@@ -28,6 +28,7 @@ import akka.actor.ActorSystem
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.event.Logging
+import java.io.File
 
 /**
  * User: cvrabie
@@ -43,6 +44,9 @@ object PostmarkFixture{
       ",9@example.com,10@example.com,11@example.com,12@example.com,13@example.com,14@example.com,15@example.com" +
       ",16@example.com,17@example.com,18@example.com,19@example.com,20@example.com,21@example.com"
   ))
+  val path = this.getClass.getResource("/baboon.jpg")
+  val file = new File(path.toURI)
+  val msgwa = Message.Builder().from("1@example.com").to("atachment@example.com").textBody("Hello").attachment(file).build
   val log = Logging(system, getClass)
   val WAIT = 5000 milli
 }
@@ -66,6 +70,15 @@ class PostmarkSpec extends Specification{
         case InvalidMessage(msg,_) =>
           log.debug("Got InvalidMessageException(%s)".format(msg))
           msg must not(beEmpty)
+      }
+    }
+
+    "send a file with an attachment to Postmark" in {
+      Await.result(client.send(msgwa),WAIT) must beLike{
+        case Message.Receipt(to,_,id,err,msg) =>
+          msg must_== "Test job accepted"
+          to must_== "atachment@example.com"
+          err must_== 0
       }
     }
 

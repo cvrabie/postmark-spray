@@ -23,20 +23,23 @@
 
 package com.postmark
 
-import akka.actor.Actor
+import akka.actor.{ActorLogging, Actor}
 import akka.actor.Status.Failure
 
 /**
  * User: cvrabie
  * Date: 21/08/2013
  */
-class PostmarkActor extends Actor{
+class PostmarkActor extends Actor with ActorLogging{
   import context.dispatcher
   val postmark = new Postmark()(context.system)
+
+  log.info("Postmark Actor is up")
 
   def receive = {
     case msg:Message =>
       val theSender = sender //we need to close on the sender because in the future callback it will be different
+      log.debug("Sending message to {}",msg.recipients)
       val promise = postmark.send(msg)
       promise.onSuccess{
         case receipt:Message.Receipt => theSender ! receipt;
@@ -47,6 +50,7 @@ class PostmarkActor extends Actor{
 
     case Message.Batch(msgs) =>
       val theSender = sender
+      log.debug("Sending batch of {} messages",msgs.size)
       val promise = postmark.sendBatch(msgs:_*)
       promise.onSuccess{
         case receipts:Array[Either[Message.Rejection,Message.Receipt]] => theSender ! receipts

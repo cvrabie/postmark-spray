@@ -55,12 +55,15 @@ case class Message(
 
   if(TextBody.isEmpty && HtmlBody.isEmpty)
     throw new InvalidMessage("Provide either email TextBody or HtmlBody or both.")
+
+  @transient
+  lazy val recipients = Array(To,Cc,Bcc).flatten.mkString(",")
 }
 
 object Message extends DefaultJsonProtocol{
   case class Attachment(
     Name: String,
-    MediaType: MediaType,
+    ContentType: MediaType,
     Content: String
   )
 
@@ -136,22 +139,31 @@ object Message extends DefaultJsonProtocol{
       MediaTypes.forExtension(ext.toLowerCase)
       .getOrElse(MediaTypes.`application/octet-stream`)
 
-    protected val Base64Encoder = Base64.custom()
-    protected val BUFFER_SIZE = 1024*100
+    protected val Base64Encoder = Base64.rfc2045()
+    protected val BUFFER_SIZE = 1024*10
 
     //TODO this reads the entire file in memory. we should stream files with a custom Marshaller if possible!
     protected def readFile(file:File):Array[Byte] = (file.exists(), file.length()) match {
       case (false, _) => throw new IOException("File %s does not exist!".format(file.getAbsolutePath))
       case (true, length) =>
         val stream = new BufferedInputStream(new FileInputStream(file), BUFFER_SIZE)
-        try readFile(stream, new Array[Byte](length.toInt), 0) finally {
+        val buffer = new Array[Byte](BUFFER_SIZE)
+        val out = new ByteArrayOutputStream(file.length().toInt)
+        try readFile(stream,out, buffer) finally {
           stream.close()
+          out.close()
         }
     }
 
-    protected def readFile(stream:BufferedInputStream, buf:Array[Byte], offset:Int):Array[Byte] = {
-      val read = stream.read(buf, offset, BUFFER_SIZE)
-      if(read <= 0) buf else readFile(stream, buf, offset+read)
+    protected def readFile(stream:BufferedInputStream, out:ByteArrayOutputStream, buffer:Array[Byte]):Array[Byte] = {
+      val read = stream.read(buffer, 0, BUFFER_SIZE)
+      if(read <= 0) {
+        out.flush()
+        out.toByteArray
+      } else {
+        out.write(buffer,0,read)
+        readFile(stream, out, buffer)
+      }
     }
 
     def fromFile(file:File)(implicit typeDetector:String=>MediaType = defaultTypeDetector) = Attachment(
@@ -184,6 +196,7 @@ object Message extends DefaultJsonProtocol{
     def header(header:(String,String)):Builder = { Headers += header; this }
     def attachment(attachment:Attachment):Builder = { Attachments += attachment; this }
     def attachment(file:File):Builder = { Attachments += Attachment.fromFile(file); this }
+    def attachment(path:String):Builder = { Attachments += Attachment.fromFile(new File(path)); this }
 
     def to(to:String*):Builder = { To ++= to; this }
     def cc(cc:String*):Builder = { Cc ++= cc; this }
