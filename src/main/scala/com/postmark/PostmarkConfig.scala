@@ -29,7 +29,7 @@ import com.typesafe.config.ConfigFactory
  * User: cvrabie
  * Date: 20/08/2013
  */
-class PostmarkConfig(val sendUrl:String, val batchUrl:String, val token:String)
+class PostmarkConfig(val sendUrl:String, val batchUrl:String, val apiKey:String)
 
 object PostmarkConfig{
   val default = {
@@ -37,7 +37,7 @@ object PostmarkConfig{
     new PostmarkConfig(
       config.getString("postmark.send-url"),
       config.getString("postmark.batch-url"),
-      config.getString("postmark.token")
+      config.getString("postmark.api-key")
     )
   }
 }
