@@ -42,10 +42,10 @@ class PostmarkActor extends Actor with ActorLogging{
       log.debug("Sending message to {}",msg.recipients)
       val promise = postmark.send(msg)
       promise.onSuccess{
-        case receipt:Message.Receipt => theSender ! receipt;
+        case receipt:Message.Receipt => theSender ! Message.Result(msg,Right(receipt))
       }
       promise.onFailure{
-        case err:Throwable => theSender ! Failure(err)
+        case err:Throwable => theSender ! Message.Result(msg,Left(err))
       }
 
     case Message.Batch(msgs) =>
@@ -53,10 +53,10 @@ class PostmarkActor extends Actor with ActorLogging{
       log.debug("Sending batch of {} messages",msgs.size)
       val promise = postmark.sendBatch(msgs:_*)
       promise.onSuccess{
-        case receipts:Array[Either[Message.Rejection,Message.Receipt]] => theSender ! receipts
+        case receipts:Array[Either[Message.Rejection,Message.Receipt]] => theSender ! Message.BatchResult(msgs,Right(receipts))
       }
       promise.onFailure{
-        case err:Throwable => theSender ! Failure(err)
+        case err:Throwable => theSender ! Message.BatchResult(msgs,Left(err))
       }
   }
 }

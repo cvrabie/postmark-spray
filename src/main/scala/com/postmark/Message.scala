@@ -96,9 +96,9 @@ object Message extends DefaultJsonProtocol{
     }
   }
 
-  implicit val attachmentJsonFormat = jsonFormat3(Attachment.apply)
+  implicit val attachmentJsonFormat = this.jsonFormat3(Attachment.apply _)
 
-  val defaultMessageJsonFormat = jsonFormat11(Message.apply)
+  val defaultMessageJsonFormat = this.jsonFormat11(Message.apply _)
 
   implicit val messageJsonFormat = new RootJsonFormat[Message] {
     def write(obj: Message) = {
@@ -114,9 +114,9 @@ object Message extends DefaultJsonProtocol{
     def read(json: JsValue) = json.convertTo[Message](defaultMessageJsonFormat)
   }
 
-  implicit val receiptJsonFormat = jsonFormat5(Receipt.apply)
+  implicit val receiptJsonFormat = this.jsonFormat5(Receipt.apply _)
 
-  implicit val rejectionJsonFormat = jsonFormat2(Rejection.apply)
+  implicit val rejectionJsonFormat = this.jsonFormat2(Rejection.apply _)
 
   implicit val receiptAndRejectionArrayReader = new RootJsonFormat[Array[Either[Message.Rejection,Message.Receipt]]] {
     def read(json: JsValue) = json match {
@@ -256,5 +256,15 @@ object Message extends DefaultJsonProtocol{
     val Message: String
   )
 
+  case class Result(
+    val message: Message,
+    val response: Either[Throwable,Receipt]
+  )
+
   case class Batch(val msgs:Seq[Message])
+
+  case class BatchResult(
+    val messages: Seq[Message],
+    val response: Either[Throwable,Array[Either[Rejection,Receipt]]]
+  )
 }

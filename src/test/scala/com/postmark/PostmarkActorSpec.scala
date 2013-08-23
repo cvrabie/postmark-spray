@@ -20,7 +20,7 @@ class PostmarkActorSpec extends TestKit(ActorSystem("postmark")) with Specificat
     "handle a message" in{
       actor ! msg
       expectMsgPF(){
-        case Message.Receipt(to,_,id,err,_) =>
+        case Message.Result(msg,Right(Message.Receipt(to,_,id,err,_))) =>
           to must_== msg.To.get
           id must not(beEmpty)
           err must_== 0
@@ -28,10 +28,23 @@ class PostmarkActorSpec extends TestKit(ActorSystem("postmark")) with Specificat
       success
     }
 
-    "handle a batch of messages" in{
-      actor ! Message.Batch(Seq(msg, msg2, bad))
+    "handle a delivery error" in {
+      actor ! bad
       expectMsgPF(){
-        case Array(Right(receipt1:Message.Receipt),Right(receipt2:Message.Receipt),Left(rejection1:Message.Rejection)) =>
+        case Message.Result(bad,Left(err:InvalidMessage)) =>
+          success
+      }
+    }
+
+    "handle a batch of messages" in{
+      val msgs = Message.Batch(Seq(msg, msg2, bad))
+      actor ! msgs
+      expectMsgPF(){
+        case Message.BatchResult(msgs,Right(Array(
+          Right(receipt1:Message.Receipt),
+          Right(receipt2:Message.Receipt),
+          Left(rejection1:Message.Rejection)
+        ))) =>
           receipt1.Message must_== "Test job accepted"
           receipt2.Message must_== "Test job accepted"
           rejection1.ErrorCode must_== 300
