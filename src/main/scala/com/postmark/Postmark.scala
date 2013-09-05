@@ -52,9 +52,9 @@ class Postmark(implicit val system:ActorSystem){
   protected val pipeline: HttpRequest => Future[HttpResponse] = (
     addHeader(HEADER_AUTH,PostmarkConfig.default.apiKey) ~>
     addHeader(HttpHeaders.Accept(MediaTypes.`application/json`)) ~>
-    logRequest(log) ~>
-    sendReceive ~>
-    logResponse(log)
+    //logRequest(log) ~>
+    sendReceive //~>
+    //logResponse(log)
   )
 
   protected def receipt(response:HttpResponse):Future[Message.Receipt] =
