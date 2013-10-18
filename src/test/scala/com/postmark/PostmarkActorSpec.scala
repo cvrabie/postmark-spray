@@ -3,8 +3,8 @@ package com.postmark
 import akka.testkit.{ImplicitSender, TestKit}
 import akka.actor.{Props, ActorSystem}
 import org.specs2.mutable.SpecificationLike
-import akka.util.Timeout
 import scala.concurrent.duration._
+import java.util.concurrent.TimeUnit
 
 /**
  * User: cvrabie
@@ -13,13 +13,14 @@ import scala.concurrent.duration._
 class PostmarkActorSpec extends TestKit(ActorSystem("postmark")) with SpecificationLike with ImplicitSender{
   import PostmarkFixture._
   val actor = system.actorOf(Props[PostmarkActor])
+  val TIMEOUT = Duration(20, TimeUnit.SECONDS)
 
   sequential
 
   "PostmarkActor" >> {
     "handle a message" in{
       actor ! msg
-      expectMsgPF(){
+      expectMsgPF(TIMEOUT){
         case Message.Result(msg,Right(Message.Receipt(to,_,id,err,_))) =>
           to must_== msg.To.get
           id must not(beEmpty)
@@ -30,7 +31,7 @@ class PostmarkActorSpec extends TestKit(ActorSystem("postmark")) with Specificat
 
     "handle a delivery error" in {
       actor ! bad
-      expectMsgPF(){
+      expectMsgPF(TIMEOUT){
         case Message.Result(bad,Left(err:InvalidMessage)) =>
           success
       }
@@ -39,7 +40,7 @@ class PostmarkActorSpec extends TestKit(ActorSystem("postmark")) with Specificat
     "handle a batch of messages" in{
       val msgs = Message.Batch(Seq(msg, msg2, bad))
       actor ! msgs
-      expectMsgPF(){
+      expectMsgPF(TIMEOUT){
         case Message.BatchResult(msgs,Right(Array(
           Right(receipt1:Message.Receipt),
           Right(receipt2:Message.Receipt),
