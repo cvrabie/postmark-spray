@@ -25,7 +25,7 @@ organization := "com.postmark"
 
 name := "postmark-spray"
 
-version := "0.3"
+version := "0.3.1"
 
 scalaVersion := "2.10.2"
 
@@ -36,10 +36,10 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "io.spray" 		% "spray-client"     % "1.2-20131004",
-  "com.typesafe.akka"   %% "akka-actor"      % "2.2.0",
+  "io.spray" 		% "spray-client"     % "1.2-RC2",
+  "com.typesafe.akka"   %% "akka-actor"      % "2.2.3",
   "io.spray"            %% "spray-json"      % "1.2.5",
-  "com.typesafe.akka"   %% "akka-slf4j"      % "2.2.0",
+  "com.typesafe.akka"   %% "akka-slf4j"      % "2.2.3",
   "ch.qos.logback"      % "logback-classic"  % "1.0.13",
   "org.mockito"         % "mockito-all"      % "1.9.0"        % "test",
   "org.specs2"          %% "specs2"          % "2.1"          % "test",
@@ -61,3 +61,17 @@ scalacOptions ++= Seq(
 testOptions in Test += Tests.Argument(TestFrameworks.Specs2, "junitxml", "console")
 
 net.virtualvoid.sbt.graph.Plugin.graphSettings
+
+publishTo in ThisBuild <<= version { (v: String) =>
+  val nexus = "http://ec2-54-229-115-100.eu-west-1.compute.amazonaws.com:9090/nexus/content/repositories/"
+  if (v.trim.endsWith("SNAPSHOT")) Some("Everreach snapshots" at nexus + "snapshots")
+  else Some("Everreach releases" at nexus + "releases")
+}
+
+publishMavenStyle in ThisBuild:= true
+
+publishArtifact in Test in ThisBuild := false
+
+pomIncludeRepository in ThisBuild := { x => false }
+
+credentials in ThisBuild += Credentials(new File(sys.env.get("EVERREACH_NEXUS_CREDENTIALS").getOrElse("/etc/everreach/nexus.credentials")))
