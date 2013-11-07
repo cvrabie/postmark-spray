@@ -25,7 +25,7 @@ organization := "com.postmark"
 
 name := "postmark-spray"
 
-version := "0.3.1"
+version := "0.3.2"
 
 scalaVersion := "2.10.2"
 
@@ -36,7 +36,7 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "io.spray" 		% "spray-client"     % "1.2-RC2",
+  "io.spray" 		% "spray-client"     % "1.2-20131106",
   "com.typesafe.akka"   %% "akka-actor"      % "2.2.3",
   "io.spray"            %% "spray-json"      % "1.2.5",
   "com.typesafe.akka"   %% "akka-slf4j"      % "2.2.3",
