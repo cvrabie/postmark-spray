@@ -24,7 +24,6 @@
 package com.postmark
 
 import akka.actor.{ActorLogging, Actor}
-import akka.actor.Status.Failure
 
 /**
  * User: cvrabie
