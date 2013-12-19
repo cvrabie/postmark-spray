@@ -166,9 +166,11 @@ object Message extends DefaultJsonProtocol{
       }
     }
 
-    def fromFile(file:File)(implicit typeDetector:String=>MediaType = defaultTypeDetector) = Attachment(
-      file.getName, typeDetector(extension(file).getOrElse("")), Base64Encoder.encodeToString(readFile(file),false)
-    )
+    def fromFile(file:File)(implicit typeDetector:String=>MediaType = defaultTypeDetector) =
+      fromBytes(file.getName, typeDetector(extension(file).getOrElse("")),readFile(file))
+
+    def fromBytes(name:String, t:MediaType, bytes:Array[Byte]) =
+      Attachment(name, t, Base64Encoder.encodeToString(bytes,false))
   }
 
   class Builder{
@@ -197,6 +199,7 @@ object Message extends DefaultJsonProtocol{
     def attachment(attachment:Attachment):Builder = { Attachments += attachment; this }
     def attachment(file:File):Builder = { Attachments += Attachment.fromFile(file); this }
     def attachment(path:String):Builder = { Attachments += Attachment.fromFile(new File(path)); this }
+    def attachment(name:String, t:MediaType, bytes:Array[Byte]):Builder = { Attachments +=Attachment.fromBytes(name, t, bytes); this }
 
     def to(to:String*):Builder = { To ++= to; this }
     def cc(cc:String*):Builder = { Cc ++= cc; this }
