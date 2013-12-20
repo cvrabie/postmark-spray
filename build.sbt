@@ -36,10 +36,10 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "io.spray" 		        % "spray-client"     % "1.2.0"        % "provided",
-  "com.typesafe.akka"   %% "akka-actor"      % "2.2.3"        % "provided",
+  "io.spray" 		        % "spray-client"     % "1.2.0",
+  "com.typesafe.akka"   %% "akka-actor"      % "2.2.3",
   "io.spray"            %% "spray-json"      % "1.2.5",
-  "com.typesafe.akka"   %% "akka-slf4j"      % "2.2.3"        % "provided",
+  "com.typesafe.akka"   %% "akka-slf4j"      % "2.2.3",
   "ch.qos.logback"      % "logback-classic"  % "1.0.13",
   "org.mockito"         % "mockito-all"      % "1.9.0"        % "test",
   "org.specs2"          %% "specs2"          % "2.1"          % "test",
