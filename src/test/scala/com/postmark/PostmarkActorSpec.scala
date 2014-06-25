@@ -21,7 +21,7 @@ class PostmarkActorSpec extends TestKit(ActorSystem("postmark")) with Specificat
     "handle a message" in{
       actor ! msg
       expectMsgPF(TIMEOUT){
-        case Message.Result(msg,Right(Message.Receipt(to,_,id,err,_))) =>
+        case Message.Receipt(to,_,id,err,_) =>
           to must_== msg.To.get
           id must not(beEmpty)
           err must_== 0
@@ -32,7 +32,7 @@ class PostmarkActorSpec extends TestKit(ActorSystem("postmark")) with Specificat
     "handle a delivery error" in {
       actor ! bad
       expectMsgPF(TIMEOUT){
-        case Message.Result(bad,Left(err:InvalidMessage)) =>
+        case akka.actor.Status.Failure(err:InvalidMessage) =>
           success
       }
     }
@@ -41,11 +41,11 @@ class PostmarkActorSpec extends TestKit(ActorSystem("postmark")) with Specificat
       val msgs = Message.Batch(Seq(msg, msg2, bad))
       actor ! msgs
       expectMsgPF(TIMEOUT){
-        case Message.BatchResult(msgs,Right(Array(
+        case Array(
           Right(receipt1:Message.Receipt),
           Right(receipt2:Message.Receipt),
           Left(rejection1:Message.Rejection)
-        ))) =>
+        ) =>
           receipt1.Message must_== "Test job accepted"
           receipt2.Message must_== "Test job accepted"
           rejection1.ErrorCode must_== 300

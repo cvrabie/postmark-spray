@@ -41,10 +41,14 @@ class PostmarkActor extends Actor with ActorLogging{
       log.debug("Sending message to {}",msg.recipients)
       val promise = postmark.send(msg)
       promise.onSuccess{
-        case receipt:Message.Receipt => theSender ! Message.Result(msg,Right(receipt))
+        case receipt:Message.Receipt => 
+			theSender ! receipt
+			log.info("Sent message to {}", msg.recipients)
       }
       promise.onFailure{
-        case err:Throwable => theSender ! Message.Result(msg,Left(err))
+        case err:Throwable => 
+			theSender ! akka.actor.Status.Failure(err)
+			log.error(err, "Failed to send message to {}", msg.recipients)
       }
 
     case Message.Batch(msgs) =>
@@ -52,10 +56,14 @@ class PostmarkActor extends Actor with ActorLogging{
       log.debug("Sending batch of {} messages",msgs.size)
       val promise = postmark.sendBatch(msgs:_*)
       promise.onSuccess{
-        case receipts:Array[Either[Message.Rejection,Message.Receipt]] => theSender ! Message.BatchResult(msgs,Right(receipts))
+        case receipts:Array[Either[Message.Rejection,Message.Receipt]] => 
+			theSender ! receipts
+			log.info("Sent batch of {} messages", msgs.size)
       }
       promise.onFailure{
-        case err:Throwable => theSender ! Message.BatchResult(msgs,Left(err))
+        case err:Throwable =>
+			theSender ! akka.actor.Status.Failure(err)
+			log.error(err, "Failed to send batch of {} messages", msgs.size)
       }
   }
 }
