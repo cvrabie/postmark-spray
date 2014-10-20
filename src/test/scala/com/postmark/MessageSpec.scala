@@ -39,13 +39,7 @@ class MessageSpec extends Specification with Mockito{
       import spray.json._
       Message("cristian@example.com",Some("a@example.com,b@example.com"),None,None,None,Some("tag1,tag2"),
         Some("""<h1 color="red">Hello</h1>"""),None,None,Seq(("a","b"),("c","d")),None).toJson.compactPrint must_==
-        """{
-          |"From":"cristian@example.com",
-          |"To":"a@example.com,b@example.com",
-          |"Tag":"tag1,tag2",
-          |"HtmlBody":"<h1 color=\"red\">Hello</h1>",
-          |"Headers":[{"Name":"a","Value":"b"},{"Name":"c","Value":"d"}]
-          |}""".stripMargin.replaceAll("\n","")
+        """{"HtmlBody":"<h1 color=\"red\">Hello</h1>","Headers":[{"Name":"a","Value":"b"},{"Name":"c","Value":"d"}],"Tag":"tag1,tag2","To":"a@example.com,b@example.com","From":"cristian@example.com"}"""
     }
 
     "not serialize optional fields that were not set" in{
