@@ -29,23 +29,26 @@ version := "0.4.1"
 
 scalaVersion := "2.11.1"
 
+crossScalaVersions := Seq("2.10.4","2.11.1")
+
 resolvers ++= Seq(
   "spray repo" at "http://repo.spray.io",
   "spray nightly" at "http://nightlies.spray.io",
-  "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
+  "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/",
+  "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases"
 )
 
 libraryDependencies ++= Seq(
-  "io.spray" 		    % "spray-client"     % "1.2.0",
-  "com.typesafe.akka"   %% "akka-actor"      % "2.2.3",
-  "io.spray"            %% "spray-json"      % "1.2.5",
-  "com.typesafe.akka"   %% "akka-slf4j"      % "2.2.3",
-  "ch.qos.logback"      % "logback-classic"  % "1.0.13",
-  "org.mockito"         % "mockito-all"      % "1.9.0"        % "test",
-  "org.specs2"          %% "specs2"          % "2.1"          % "test",
-  "com.typesafe.akka"   %% "akka-testkit"    % "2.2.0"        % "test",
-  "junit"               % "junit"            % "4.7"          % "test",
-  "com.novocode"        % "junit-interface"  % "0.7"          % "test->default"
+  "io.spray" 		%% "spray-client"    % "1.3.2",
+  "com.typesafe.akka"   %% "akka-actor"      % "2.3.6",
+  "io.spray"            %% "spray-json"      % "1.3.0",
+  "com.typesafe.akka"   %% "akka-slf4j"      % "2.3.6",
+  "ch.qos.logback"      % "logback-classic"  % "1.1.2",
+  "org.mockito"         % "mockito-all"      % "1.10.8"        % "test",
+  "org.specs2"          %% "specs2"          % "2.4.6"         % "test",
+  "com.typesafe.akka"   %% "akka-testkit"    % "2.3.6"         % "test",
+  "junit"               % "junit"            % "4.11"          % "test",
+  "com.novocode"        % "junit-interface"  % "0.11"          % "test->default"
 )
 
 scalacOptions ++= Seq(
