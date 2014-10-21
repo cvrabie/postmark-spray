@@ -25,11 +25,11 @@ organization := "com.postmark"
 
 name := "postmark-spray"
 
-version := "0.4.1"
+version := "0.4.2"
 
-scalaVersion := "2.11.1"
+scalaVersion := "2.11.2"
 
-crossScalaVersions := Seq("2.10.4","2.11.1")
+crossScalaVersions := Seq("2.10.4","2.11.2")
 
 resolvers ++= Seq(
   "spray repo" at "http://repo.spray.io",
